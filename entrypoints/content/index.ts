@@ -18,7 +18,7 @@ export default defineContentScript({
         browser.runtime.onMessage.addListener(
             (
                 message: BackgroundMessage,
-                _sender: browser.Runtime.MessageSender,
+                _sender: any,
                 sendResponse: (response: ContentResponse) => void,
             ) => {
                 try {

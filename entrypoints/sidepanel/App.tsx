@@ -6,6 +6,24 @@ import { useCandidateStore } from '@/src/hooks/useCandidateStore';
 import { JobFitCard } from '@/src/components/JobFitCard';
 import Icebreaker from '@/src/components/Icebreaker';
 import { downloadAsCSV } from '@/src/utils/csv_exporter';
+import {
+    Pin,
+    X,
+    ScanSearch,
+    Briefcase,
+    Settings,
+    ChevronDown,
+    ChevronUp,
+    Pencil,
+    Trash2,
+    FolderOpen,
+    Users,
+    Calendar,
+    Plus,
+    Search,
+    Moon,
+    Sun
+} from "lucide-react";
 
 type AppStatus = 'ready' | 'scanning' | 'analyzing' | 'done' | 'error';
 type TabId = 'scanner' | 'jobs' | 'settings';
@@ -133,398 +151,392 @@ function App() {
         ? store.isSaved(candidate.profileUrl, activeJob?.id)
         : false;
 
-    const statusConfig: Record<AppStatus, { label: string; className: string }> = {
-        ready: { label: 'Listo', className: 'status-ready' },
-        scanning: { label: 'Escaneando DOM…', className: 'status-analyzing' },
-        analyzing: { label: 'IA analizando…', className: 'status-analyzing' },
-        done: { label: 'Perfil extraído', className: 'status-done' },
-        error: { label: 'Error', className: 'status-error' },
-    };
-
-    const { label: statusLabel, className: statusClass } = statusConfig[status];
-
     return (
-        <div className="app">
+        <div className="min-h-screen bg-secondary/50 font-sans text-foreground">
             {/* ── Toast ── */}
             {store.toast && (
-                <div className={`toast toast-${store.toast.type}`} onClick={store.clearToast}>
+                <div
+                    className={`fixed top-4 left-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium animate-in fade-in slide-in-from-top-2 cursor-pointer
+                    ${store.toast.type === 'error' ? 'bg-destructive text-destructive-foreground border-destructive/20' : 'bg-primary text-primary-foreground border-primary/20'}`}
+                    onClick={store.clearToast}
+                >
                     {store.toast.message}
                 </div>
             )}
 
-            {/* ── Header ── */}
-            <header className="header">
-                <div className="header-left">
-                    <h1 className="title">TalentScout</h1>
-                    <span className="subtitle">Mini-ATS</span>
-                </div>
-                <div className="header-actions">
-                    <span className={`status-badge ${statusClass}`}>{statusLabel}</span>
-                    <button
-                        className="theme-toggle"
-                        onClick={() => setDarkMode(!darkMode)}
-                        title={darkMode ? 'Modo claro' : 'Modo oscuro'}
-                    >
-                        {darkMode ? (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg>
-                        ) : (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
-                        )}
-                    </button>
-                </div>
-            </header>
+            {/* ── Main Container (Card style) ── */}
+            <div className="w-full bg-background min-h-screen flex flex-col">
 
-            {/* ── Tab Navigation ── */}
-            <nav className="tab-nav">
-                <button
-                    className={`tab-btn ${activeTab === 'scanner' ? 'tab-active' : ''}`}
-                    onClick={() => setActiveTab('scanner')}
-                >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-                    Scanner
-                </button>
-                <button
-                    className={`tab-btn ${activeTab === 'jobs' ? 'tab-active' : ''}`}
-                    onClick={() => setActiveTab('jobs')}
-                >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
-                    Llamados
-                    {store.jobs.length > 0 && (
-                        <span className="tab-badge">{store.jobs.length}</span>
-                    )}
-                </button>
-                <button
-                    className={`tab-btn ${activeTab === 'settings' ? 'tab-active' : ''}`}
-                    onClick={() => setActiveTab('settings')}
-                >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
-                </button>
-            </nav>
-
-            {/* ── Tab Content ── */}
-            {activeTab === 'scanner' ? (
-                <>
-                    {/* Job Selector */}
-                    <section className="controls">
-                        <div className="job-selector">
-                            <label className="section-label" htmlFor="active-job">Llamado activo</label>
-                            {store.jobs.length > 0 ? (
-                                <select
-                                    id="active-job"
-                                    className="job-select"
-                                    value={store.activeJobId ?? ''}
-                                    onChange={(e) => store.setActiveJobId(e.target.value || null)}
-                                >
-                                    <option value="">Bolsa General (Escaneo Libre)</option>
-                                    {store.jobs.map((job) => (
-                                        <option key={job.id} value={job.id}>{job.title}</option>
-                                    ))}
-                                </select>
-                            ) : (
-                                <p className="no-jobs-hint">
-                                    Crea un Llamado en la pestaña "Llamados" para habilitar el análisis de compatibilidad automático.
-                                </p>
-                            )}
+                {/* ── Extension Brand Header ── */}
+                <div className="flex items-center justify-between px-5 py-4 bg-background">
+                    <div>
+                        <h1 className="text-lg font-bold text-primary tracking-tight leading-none">
+                            TalentScout
+                        </h1>
+                        <p className="text-xs text-muted-foreground font-medium tracking-wide uppercase mt-0.5">
+                            Mini-ATS
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className={`px-2 py-0.5 text-xs font-medium border rounded-full ${status === 'ready' || status === 'done' ? 'bg-green-500/10 text-green-600 border-green-500/20' : 'bg-secondary text-muted-foreground border-border'}`}>
+                            {status === 'scanning' || status === 'analyzing' ? 'Procesando' : 'Listo'}
                         </div>
-
                         <button
-                            className="btn-analyze"
-                            onClick={handleAnalyze}
-                            disabled={status === 'scanning' || status === 'analyzing'}
+                            onClick={() => setDarkMode(!darkMode)}
+                            className="size-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                            title={darkMode ? 'Modo claro' : 'Modo oscuro'}
                         >
-                            {status === 'scanning' || status === 'analyzing' ? (
-                                <>
-                                    <span className="spinner" />
-                                    {status === 'scanning' ? 'Escaneando DOM…' : 'IA procesando…'}
-                                </>
-                            ) : (
-                                'Analizar perfil'
+                            {darkMode ? <Sun className="size-4" /> : <Moon className="size-4" />}
+                        </button>
+                    </div>
+                </div>
+
+                {/* ── Tab Navigation (Segmented Control) ── */}
+                <div className="px-5 pb-2">
+                    <div className="flex p-1 bg-secondary/60 rounded-xl gap-1">
+                        <button
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all
+                            ${activeTab === 'scanner'
+                                    ? 'bg-background text-foreground shadow-sm ring-1 ring-black/5'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
+                            onClick={() => setActiveTab('scanner')}
+                        >
+                            <ScanSearch className="size-3.5" />
+                            Scanner
+                        </button>
+                        <button
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all
+                            ${activeTab === 'jobs'
+                                    ? 'bg-background text-foreground shadow-sm ring-1 ring-black/5'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
+                            onClick={() => setActiveTab('jobs')}
+                        >
+                            <Briefcase className="size-3.5" />
+                            Llamados
+                            {store.jobs.length > 0 && (
+                                <span className={`text-[10px] font-bold rounded-full size-4 flex items-center justify-center leading-none ${activeTab === 'jobs' ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/20 text-muted-foreground'}`}>
+                                    {store.jobs.length}
+                                </span>
                             )}
                         </button>
-                    </section>
+                        <button
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all
+                            ${activeTab === 'settings'
+                                    ? 'bg-background text-foreground shadow-sm ring-1 ring-black/5'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'}`}
+                            onClick={() => setActiveTab('settings')}
+                        >
+                            <Settings className="size-3.5" />
+                            Config
+                        </button>
+                    </div>
+                </div>
 
-                    {/* Error */}
-                    {error && (
-                        <div className="error-box">
-                            <strong>Error:</strong> {error}
-                        </div>
-                    )}
-
-                    {/* Tarjeta de Candidato */}
-                    {candidate && (
-                        <section className="candidate-card">
-                            <div className="candidate-header">
-                                <div className="candidate-avatar">
-                                    {candidate.fullName.charAt(0).toUpperCase()}
+                {/* ── Content Area ── */}
+                <div className="flex-1 overflow-auto">
+                    {activeTab === 'scanner' && (
+                        <div className="px-5 py-4 flex flex-col gap-4">
+                            {/* Job Selector */}
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                    Llamado activo
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        className="w-full h-10 bg-secondary border border-border text-foreground rounded-xl shadow-sm px-3 appearance-none focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                                        value={store.activeJobId ?? ''}
+                                        onChange={(e) => store.setActiveJobId(e.target.value || null)}
+                                    >
+                                        <option value="">Bolsa General (Escaneo Libre)</option>
+                                        {store.jobs.map((job) => (
+                                            <option key={job.id} value={job.id}>{job.title}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-3 size-4 text-muted-foreground pointer-events-none" />
                                 </div>
-                                <div className="candidate-info">
-                                    <h2 className="candidate-name">{candidate.fullName}</h2>
-                                    <p className="candidate-role">{candidate.currentRole}</p>
-                                    {candidate.location && (
-                                        <p className="candidate-location">{candidate.location}</p>
-                                    )}
-                                </div>
-                                <button
-                                    className="btn-icon"
-                                    title={cardExpanded ? 'Colapsar detalles' : 'Ver detalles'}
-                                    onClick={() => setCardExpanded(!cardExpanded)}
-                                >
-                                    <ChevronDown open={cardExpanded} />
-                                </button>
+                                {store.jobs.length === 0 && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        💡 Crea un llamado en la pestaña "Llamados" para activar el análisis de compatibilidad.
+                                    </p>
+                                )}
                             </div>
 
-                            {cardExpanded && (
-                                <>
-                                    {candidate.summary && (
-                                        <p className="candidate-summary">{candidate.summary}</p>
-                                    )}
+                            {/* Analyze Button */}
+                            <button
+                                className="w-full h-11 bg-primary text-primary-foreground rounded-xl font-semibold text-sm gap-2 shadow-md hover:shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={handleAnalyze}
+                                disabled={status === 'scanning' || status === 'analyzing'}
+                            >
+                                {status === 'scanning' || status === 'analyzing' ? (
+                                    <>
+                                        <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        {status === 'scanning' ? 'Escaneando DOM…' : 'IA procesando…'}
+                                    </>
+                                ) : (
+                                    <>
+                                        <ScanSearch className="size-4" />
+                                        Analizar perfil
+                                    </>
+                                )}
+                            </button>
 
-                                    {candidate.skills.length > 0 && (
-                                        <div className="skills-section">
-                                            <h3 className="section-label">Skills</h3>
-                                            <div className="skills-tags">
-                                                {candidate.skills.map((skill, i) => (
-                                                    <span key={i} className="skill-tag">{skill}</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {candidate.certifications?.length > 0 && (
-                                        <div className="skills-section">
-                                            <h3 className="section-label">Certificaciones</h3>
-                                            <div className="skills-tags">
-                                                {candidate.certifications.map((cert, i) => (
-                                                    <span key={i} className="skill-tag cert-tag">{cert}</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {candidate.experience.length > 0 && (
-                                        <div className="experience-section">
-                                            <h3 className="section-label">Experiencia</h3>
-                                            <div className="experience-list">
-                                                {candidate.experience.map((exp, i) => (
-                                                    <div key={i} className="experience-item">
-                                                        <span className="exp-role">{exp.role}</span>
-                                                        <span className="exp-company">{exp.company}</span>
-                                                        <span className="exp-duration">{exp.duration}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Education */}
-                                    {candidate.education?.length > 0 && (
-                                        <div className="experience-section">
-                                            <h3 className="section-label">Educación</h3>
-                                            <div className="experience-list">
-                                                {candidate.education.map((edu, i) => (
-                                                    <div key={i} className="experience-item">
-                                                        <span className="exp-role">{edu.degree}</span>
-                                                        <span className="exp-company">{edu.institution}</span>
-                                                        {edu.year && <span className="exp-duration">{edu.year}</span>}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Contact info */}
-                                    {(candidate.email || candidate.phone) && (
-                                        <div className="skills-section">
-                                            <h3 className="section-label">Contacto</h3>
-                                            <div className="skills-tags">
-                                                {candidate.email && (
-                                                    <span className="skill-tag">{candidate.email}</span>
-                                                )}
-                                                {candidate.phone && (
-                                                    <span className="skill-tag">{candidate.phone}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
+                            {/* Error */}
+                            {error && (
+                                <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm p-3 rounded-xl flex items-start gap-2">
+                                    <X className="size-4 mt-0.5 shrink-0" />
+                                    <span>{error}</span>
+                                </div>
                             )}
 
-                            <div className="candidate-source">
-                                <span className={`source-badge source-${candidate.source}`}>
-                                    {candidate.source.toUpperCase()}
-                                </span>
-                                {candidate.profileUrl && (
-                                    <a href={candidate.profileUrl} target="_blank" rel="noopener noreferrer" className="profile-link">
-                                        Ver perfil ↗
-                                    </a>
-                                )}
-                            </div>
+                            {/* Candidate Card */}
+                            {candidate && (
+                                <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                                    {/* Card Header */}
+                                    <div className="p-4 flex items-start justify-between border-b border-border/50">
+                                        <div className="flex gap-3">
+                                            <div className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
+                                                {candidate.fullName.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <h2 className="font-semibold text-foreground leading-tight">{candidate.fullName}</h2>
+                                                <p className="text-sm text-muted-foreground">{candidate.currentRole}</p>
+                                                {candidate.location && (
+                                                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                                                        <span className="inline-block size-1.5 rounded-full bg-muted-foreground/50" />
+                                                        {candidate.location}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button
+                                            className="text-muted-foreground hover:text-foreground transition-colors"
+                                            onClick={() => setCardExpanded(!cardExpanded)}
+                                        >
+                                            {cardExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                                        </button>
+                                    </div>
 
-                            <div className="candidate-actions">
-                                <button
-                                    className={`btn-save ${alreadySaved ? 'btn-saved' : ''}`}
-                                    onClick={handleSave}
-                                    disabled={alreadySaved}
-                                >
-                                    {alreadySaved ? 'Guardado' : 'Guardar candidato'}
-                                </button>
-                                {activeJob && !fitResult && (
-                                    <button
-                                        className="btn-fit"
-                                        onClick={handleManualFit}
-                                        disabled={fitLoading}
-                                    >
-                                        {fitLoading ? (
-                                            <><span className="spinner" /> Analizando fit...</>
-                                        ) : (
-                                            'Analizar compatibilidad'
+                                    {/* Card Body */}
+                                    {cardExpanded && (
+                                        <div className="p-4 space-y-4">
+                                            {candidate.summary && (
+                                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                                    {candidate.summary}
+                                                </p>
+                                            )}
+
+                                            {/* Skills */}
+                                            {candidate.skills.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Skills</h3>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {candidate.skills.map((skill, i) => (
+                                                            <span key={i} className="px-2 py-1 bg-secondary text-secondary-foreground text-xs rounded-md font-medium border border-border">
+                                                                {skill}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Experience */}
+                                            {candidate.experience.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Experiencia</h3>
+                                                    <div className="space-y-2">
+                                                        {candidate.experience.map((exp, i) => (
+                                                            <div key={i} className="text-sm border-l-2 border-border pl-3">
+                                                                <div className="font-medium text-foreground">{exp.role}</div>
+                                                                <div className="text-muted-foreground text-xs flex justify-between">
+                                                                    <span>{exp.company}</span>
+                                                                    <span>{exp.duration}</span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Education */}
+                                            {candidate.education?.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Educación</h3>
+                                                    <div className="space-y-2">
+                                                        {candidate.education.map((edu, i) => (
+                                                            <div key={i} className="text-sm border-l-2 border-border pl-3">
+                                                                <div className="font-medium text-foreground">{edu.degree}</div>
+                                                                <div className="text-muted-foreground text-xs">
+                                                                    {edu.institution} {edu.year && `• ${edu.year}`}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Card Footer Actions */}
+                                    <div className="p-3 bg-secondary/30 border-t border-border flex items-center justify-between gap-2">
+                                        {candidate.profileUrl && (
+                                            <a
+                                                href={candidate.profileUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
+                                            >
+                                                Ver perfil <ScanSearch className="size-3" />
+                                            </a>
                                         )}
-                                    </button>
-                                )}
-                            </div>
 
-                            {/* Icebreaker */}
-                            <Icebreaker candidate={candidate} jobPost={activeJob} />
-                        </section>
-                    )}
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5
+                                                ${alreadySaved
+                                                        ? 'bg-green-500/10 text-green-600 border border-green-500/20 cursor-default'
+                                                        : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'}`}
+                                                onClick={handleSave}
+                                                disabled={alreadySaved}
+                                            >
+                                                {alreadySaved ? 'Guardado' : 'Guardar'}
+                                            </button>
 
-                    {/* Fit Result */}
-                    {fitResult && <JobFitCard result={fitResult} />}
+                                            {activeJob && !fitResult && (
+                                                <button
+                                                    className="px-3 py-1.5 bg-secondary text-secondary-foreground border border-border rounded-lg text-xs font-semibold hover:bg-secondary/80 transition-all flex items-center gap-1.5"
+                                                    onClick={handleManualFit}
+                                                    disabled={fitLoading}
+                                                >
+                                                    {fitLoading ? <div className="size-3 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <Search className="size-3.5" />}
+                                                    Analizar Fit
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
 
-                    {/* Debug */}
-                    {domMap && (
-                        <section className="debug-section">
-                            <button className="debug-toggle" onClick={() => setShowDebug(!showDebug)}>
-                                <span>{showDebug ? '▼' : '▶'} Debug: DOM Map</span>
-                                <span className="badge">{elementCount} nodos</span>
-                            </button>
-                            {showDebug && <pre className="debug-output">{domMap}</pre>}
-                        </section>
-                    )}
-                </>
-            ) : activeTab === 'jobs' ? (
-                /* ── Mis Llamados ── */
-                <div className="candidate-list-view">
-                    <div className="list-header">
-                        <h2 className="list-title">
-                            Llamados
-                            <span className="list-count">{store.jobs.length}</span>
-                        </h2>
-                    </div>
-
-                    {/* Placeholder — Fase 2 will build the full job list + create form */}
-                    <JobListPlaceholder
-                        jobs={store.jobs}
-                        candidates={store.candidates}
-                        onAddJob={store.addJob}
-                        onUpdateJob={store.updateJob}
-                        onRemoveJob={store.removeJob}
-                        onDeleteCandidate={store.removeCandidate}
-                        getCandidatesForJob={store.getCandidatesForJob}
-                        getUnassignedCandidates={store.getUnassignedCandidates}
-                        onExportCSV={downloadAsCSV}
-                    />
-                </div>
-            ) : activeTab === 'settings' ? (
-                /* ── Settings ── */
-                <div className="candidate-list-view">
-                    <div className="list-header">
-                        <h2 className="list-title">Configuración</h2>
-                    </div>
-                    <div className="jobs-list">
-                        <div className="job-form">
-                            <label className="section-label" htmlFor="api-key">Gemini API Key</label>
-                            <p className="no-jobs-hint" style={{ marginBottom: '8px' }}>
-                                Obtén tu clave en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="profile-link">Google AI Studio</a>
-                            </p>
-                            <input
-                                id="api-key"
-                                className="job-input"
-                                type="password"
-                                placeholder="AIzaSy..."
-                                value={apiKeyInput}
-                                onChange={(e) => { setApiKeyInput(e.target.value); setApiKeySet(false); }}
-                                onFocus={() => { if (apiKeySet) { setApiKeyInput(''); setApiKeySet(false); } }}
-                            />
-                            <button
-                                className={`btn-fit ${apiKeySet ? 'btn-saved' : ''}`}
-                                disabled={apiKeySet || apiKeyInput.length < 10}
-                                onClick={async () => {
-                                    try {
-                                        await setApiKey(apiKeyInput);
-                                        setApiKeySet(true);
-                                        setApiKeyInput('••••••••••' + apiKeyInput.slice(-4));
-                                    } catch (err) {
-                                        setError(err instanceof Error ? err.message : String(err));
-                                    }
-                                }}
-                            >
-                                {apiKeySet ? 'Guardada' : 'Guardar API Key'}
-                            </button>
-                        </div>
-
-                        {/* Storage usage */}
-                        {store.storageUsage > 50 && (
-                            <div className="job-form" style={{ marginTop: 8 }}>
-                                <label className="section-label">Almacenamiento</label>
-                                <div className="storage-bar-track">
-                                    <div
-                                        className={`storage-bar-fill ${store.storageUsage >= 80 ? 'storage-bar-warn' : ''}`}
-                                        style={{ width: `${store.storageUsage}%` }}
-                                    />
+                                    {/* Icebreaker */}
+                                    <div className="border-t border-border">
+                                        <Icebreaker candidate={candidate} jobPost={activeJob} />
+                                    </div>
                                 </div>
-                                <span className="char-counter">{store.storageUsage}% usado de 5 MB</span>
+                            )}
+
+                            {/* Fit Result */}
+                            {fitResult && <JobFitCard result={fitResult} />}
+
+                            {/* Debug Section */}
+                            {domMap && (
+                                <div className="mt-4 border-t border-border pt-4">
+                                    <button
+                                        className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors"
+                                        onClick={() => setShowDebug(!showDebug)}
+                                    >
+                                        {showDebug ? <ChevronDown className="size-3" /> : <ChevronDown className="size-3 -rotate-90" />}
+                                        Debug info ({elementCount} nodes)
+                                    </button>
+                                    {showDebug && (
+                                        <pre className="mt-2 p-3 bg-secondary/50 rounded-lg text-[10px] font-mono overflow-auto max-h-40 text-muted-foreground">
+                                            {domMap}
+                                        </pre>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'jobs' && (
+                        <div className="px-5 py-4 flex flex-col gap-4">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-sm font-bold text-foreground">Mis Llamados</h2>
+                                <span className="text-xs text-muted-foreground">{store.jobs.length} activos</span>
                             </div>
-                        )}
-                    </div>
+
+                            <JobListPlaceholder
+                                jobs={store.jobs}
+                                candidates={store.candidates}
+                                onAddJob={store.addJob}
+                                onUpdateJob={store.updateJob}
+                                onRemoveJob={store.removeJob}
+                                onDeleteCandidate={store.removeCandidate}
+                                getCandidatesForJob={store.getCandidatesForJob}
+                                getUnassignedCandidates={store.getUnassignedCandidates}
+                                onExportCSV={downloadAsCSV}
+                            />
+                        </div>
+                    )}
+
+                    {activeTab === 'settings' && (
+                        <div className="px-5 py-4 flex flex-col gap-6">
+                            <div>
+                                <h2 className="text-sm font-bold text-foreground mb-4">Configuración</h2>
+
+                                <div className="space-y-3">
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider" htmlFor="api-key">
+                                        Gemini API Key
+                                    </label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Obtén tu clave en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google AI Studio</a>
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <input
+                                            id="api-key"
+                                            className="flex-1 h-9 bg-secondary border border-border rounded-lg px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all placeholder:text-muted-foreground"
+                                            type="password"
+                                            placeholder="AIzaSy..."
+                                            value={apiKeyInput}
+                                            onChange={(e) => { setApiKeyInput(e.target.value); setApiKeySet(false); }}
+                                            onFocus={() => { if (apiKeySet) { setApiKeyInput(''); setApiKeySet(false); } }}
+                                        />
+                                        <button
+                                            className={`h-9 px-4 rounded-lg text-xs font-semibold transition-all whitespace-nowrap
+                                            ${apiKeySet
+                                                    ? 'bg-green-500/10 text-green-600 border border-green-500/20'
+                                                    : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'}`}
+                                            disabled={apiKeySet || apiKeyInput.length < 10}
+                                            onClick={async () => {
+                                                try {
+                                                    await setApiKey(apiKeyInput);
+                                                    setApiKeySet(true);
+                                                    setApiKeyInput('••••••••••' + apiKeyInput.slice(-4));
+                                                } catch (err) {
+                                                    setError(err instanceof Error ? err.message : String(err));
+                                                }
+                                            }}
+                                        >
+                                            {apiKeySet ? 'Guardada' : 'Guardar'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Storage usage */}
+                            {store.storageUsage > 25 && (
+                                <div className="space-y-2 p-3 bg-secondary/30 rounded-xl border border-border">
+                                    <div className="flex justify-between text-xs font-medium">
+                                        <span>Almacenamiento Local</span>
+                                        <span className={store.storageUsage > 80 ? 'text-destructive' : 'text-muted-foreground'}>
+                                            {store.storageUsage}% usado
+                                        </span>
+                                    </div>
+                                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                                        <div
+                                            className={`h-full rounded-full transition-all ${store.storageUsage > 80 ? 'bg-destructive' : 'bg-primary'}`}
+                                            style={{ width: `${store.storageUsage}%` }}
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">Límite ~5MB (Chrome Sync Storage)</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
-            ) : null}
-        </div>
-    );
-}
 
-// ── SVG Icon helpers ──
-const ChevronDown = ({ open }: { open: boolean }) => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9" /></svg>
-);
-const PencilIcon = () => (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
-);
-const TrashIcon = () => (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-);
-const FolderIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
-);
-
-// ── Score color helper ──
-function scoreColor(score: number | undefined): string {
-    if (score === undefined) return 'var(--text-muted)';
-    if (score >= 75) return 'var(--color-score-high, #22c55e)';
-    if (score >= 50) return 'var(--color-score-mid, #f59e0b)';
-    return 'var(--color-score-low, #ef4444)';
-}
-
-// ── Compact candidate row with match score ──
-function CandidateScoreRow({ candidate, onDelete }: {
-    candidate: import('@/src/shared/types').CandidateProfile;
-    onDelete: (url: string) => Promise<void>;
-}) {
-    return (
-        <div className="candidate-score-row">
-            <div className="candidate-score-info">
-                <span className="candidate-score-name">{candidate.fullName || 'Sin nombre'}</span>
-                <span className="candidate-score-role">{candidate.currentRole}</span>
-            </div>
-            <div className="candidate-score-actions">
-                {candidate.matchScore !== undefined && (
-                    <span className="score-pill" style={{ borderColor: scoreColor(candidate.matchScore), color: scoreColor(candidate.matchScore) }}>
-                        {candidate.matchScore}%
-                    </span>
-                )}
-                <button className="btn-icon btn-icon-sm" title="Eliminar" onClick={() => onDelete(candidate.profileUrl)}>
-                    <TrashIcon />
-                </button>
+                {/* Footer Version */}
+                <div className="p-3 border-t border-border bg-card/50">
+                    <p className="text-center text-[10px] text-muted-foreground font-medium">
+                        TalentScout MCP v1.0
+                    </p>
+                </div>
             </div>
         </div>
     );
@@ -584,39 +596,48 @@ function JobListPlaceholder({
     const unassigned = getUnassignedCandidates();
 
     return (
-        <div className="jobs-list">
+        <div className="flex flex-col gap-3">
             {/* Create Job Button */}
             {!showForm && (
-                <button className="btn-analyze" onClick={() => setShowForm(true)}>
-                    + Nuevo llamado
+                <button
+                    className="w-full h-10 bg-card border border-border border-dashed hover:border-primary/50 text-muted-foreground hover:text-primary rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2"
+                    onClick={() => setShowForm(true)}
+                >
+                    <Plus className="size-4" />
+                    Nuevo llamado
                 </button>
             )}
 
             {/* Create Job Form */}
             {showForm && (
-                <div className="job-form">
+                <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-3 animate-in fade-in slide-in-from-top-2">
                     <input
-                        className="job-input"
+                        className="w-full h-9 bg-secondary border border-border rounded-lg px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all placeholder:text-muted-foreground"
                         placeholder="Título del puesto (e.g. Frontend Developer Sr.)"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
+                        autoFocus
                     />
                     <textarea
-                        className="jd-textarea"
-                        placeholder="Pega aquí la Job Description completa..."
+                        className="w-full bg-secondary border border-border rounded-lg p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all resize-none placeholder:text-muted-foreground"
+                        placeholder="Descripción del puesto..."
                         value={desc}
                         onChange={(e) => setDesc(e.target.value)}
-                        rows={5}
+                        rows={4}
                         maxLength={10000}
                     />
-                    {desc.length > 0 && (
-                        <span className="char-counter">{desc.length.toLocaleString()} / 10,000</span>
-                    )}
-                    <div className="job-form-actions">
-                        <button className="btn-fit" onClick={handleCreate} disabled={!title.trim()}>
+                    <div className="flex gap-2 pt-1">
+                        <button
+                            className="flex-1 h-9 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition-all disabled:opacity-50"
+                            onClick={handleCreate}
+                            disabled={!title.trim()}
+                        >
                             Crear llamado
                         </button>
-                        <button className="btn-fit" onClick={() => setShowForm(false)}>
+                        <button
+                            className="flex-1 h-9 bg-secondary text-secondary-foreground border border-border rounded-lg text-xs font-semibold hover:bg-secondary/80 transition-all"
+                            onClick={() => setShowForm(false)}
+                        >
                             Cancelar
                         </button>
                     </div>
@@ -624,29 +645,23 @@ function JobListPlaceholder({
             )}
 
             {/* ── Bolsa General ── */}
-            <div className="job-card">
-                <div className="job-card-header">
-                    <div className="job-card-info">
-                        <span className="job-card-title"><FolderIcon /> Bolsa General</span>
-                        <span className="job-card-meta">
-                            {unassigned.length} candidato{unassigned.length !== 1 ? 's' : ''} sin asignar
-                        </span>
-                    </div>
-                    <div className="job-card-actions">
-                        {unassigned.length > 0 && (
-                            <button
-                                className="btn-csv"
-                                onClick={(e) => { e.stopPropagation(); onExportCSV(unassigned); }}
-                                title="Exportar candidatos"
-                            >
-                                CSV
-                            </button>
-                        )}
+            <div className={`group rounded-xl border border-border bg-card p-3.5 transition-all hover:shadow-sm hover:border-primary/20 cursor-pointer ${expandedDescId === 'unassigned' ? 'ring-2 ring-primary/20' : ''}`}
+                onClick={() => setExpandedDescId(expandedDescId === 'unassigned' ? null : 'unassigned')}>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="size-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                            <FolderOpen className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground truncate">Bolsa General</p>
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                                <Users className="size-3" /> {unassigned.length} candidatos sin asignar
+                            </span>
+                        </div>
                     </div>
                 </div>
-                {/* Candidates always visible */}
-                {unassigned.length > 0 && (
-                    <div className="job-card-candidates">
+                {unassigned.length > 0 && expandedDescId === 'unassigned' && (
+                    <div className="mt-3 pt-3 border-t border-border space-y-2 animate-in fade-in">
                         {unassigned.map((c) => (
                             <CandidateScoreRow key={c.profileUrl} candidate={c} onDelete={onDeleteCandidate} />
                         ))}
@@ -655,105 +670,150 @@ function JobListPlaceholder({
             </div>
 
             {/* ── Job Cards ── */}
-            {jobs.length === 0 && !showForm && (
-                <div className="list-empty">
-                    <span className="list-empty-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
-                    </span>
-                    <p>No hay llamados aún.</p>
-                    <p className="list-empty-hint">
-                        Crea un llamado para empezar a reclutar candidatos.
-                    </p>
-                </div>
-            )}
-
             {jobs.map((job) => {
                 const jobCandidates = getCandidatesForJob(job.id);
                 const isDescExpanded = expandedDescId === job.id;
                 const isEditing = editingJobId === job.id;
 
                 return (
-                    <div key={job.id} className="job-card">
-                        {/* Header row */}
-                        <div className="job-card-header">
-                            <div className="job-card-info">
-                                <span className="job-card-title">{job.title}</span>
-                                <span className="job-card-meta">
-                                    {jobCandidates.length} candidato{jobCandidates.length !== 1 ? 's' : ''} · {new Date(job.createdAt).toLocaleDateString()}
-                                </span>
-                            </div>
-                            <div className="job-card-actions">
-                                {jobCandidates.length > 0 && (
-                                    <button
-                                        className="btn-csv"
-                                        onClick={(e) => { e.stopPropagation(); onExportCSV(jobCandidates); }}
-                                        title="Exportar CSV"
-                                    >
-                                        CSV
-                                    </button>
-                                )}
-                                <button className="btn-icon" title="Editar" onClick={() => startEdit(job)}>
-                                    <PencilIcon />
-                                </button>
-                                <button className="btn-icon" title="Eliminar" onClick={() => onRemoveJob(job.id)}>
-                                    <TrashIcon />
-                                </button>
-                                <button
-                                    className="btn-icon"
-                                    title={isDescExpanded ? 'Ocultar descripción' : 'Ver descripción'}
-                                    onClick={() => setExpandedDescId(isDescExpanded ? null : job.id)}
-                                >
-                                    <ChevronDown open={isDescExpanded} />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Expandable: description / edit form */}
-                        {isDescExpanded && (
-                            <div className="job-card-body">
-                                {isEditing ? (
-                                    <div className="job-form">
-                                        <input
-                                            className="job-input"
-                                            value={editTitle}
-                                            onChange={(e) => setEditTitle(e.target.value)}
-                                        />
-                                        <textarea
-                                            className="jd-textarea"
-                                            value={editDesc}
-                                            onChange={(e) => setEditDesc(e.target.value)}
-                                            rows={5}
-                                            maxLength={10000}
-                                        />
-                                        {editDesc.length > 0 && (
-                                            <span className="char-counter">{editDesc.length.toLocaleString()} / 10,000</span>
-                                        )}
-                                        <div className="job-form-actions">
-                                            <button className="btn-fit" onClick={handleUpdate} disabled={!editTitle.trim()}>
-                                                Guardar cambios
-                                            </button>
-                                            <button className="btn-fit" onClick={() => setEditingJobId(null)}>
-                                                Cancelar
-                                            </button>
+                    <div
+                        key={job.id}
+                        className={`group rounded-xl border border-border bg-card transition-all hover:shadow-sm hover:border-primary/20 ${isDescExpanded ? 'ring-2 ring-primary/20' : ''}`}
+                    >
+                        <div className="p-3.5 flex items-start justify-between cursor-pointer" onClick={() => !isEditing && setExpandedDescId(isDescExpanded ? null : job.id)}>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="size-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                                    <Briefcase className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                </div>
+                                {!isEditing ? (
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-foreground truncate">{job.title}</p>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                <Users className="size-3" /> {jobCandidates.length}
+                                            </span>
+                                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                <Calendar className="size-3" /> {new Date(job.createdAt).toLocaleDateString()}
+                                            </span>
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="job-card-desc">{job.description || 'Sin descripción.'}</p>
+                                    <input
+                                        className="h-8 bg-secondary border border-border rounded px-2 text-sm w-full text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                        value={editTitle}
+                                        onChange={(e) => setEditTitle(e.target.value)}
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
                                 )}
                             </div>
-                        )}
 
-                        {/* Candidates always visible with match scores */}
-                        {jobCandidates.length > 0 && (
-                            <div className="job-card-candidates">
-                                {jobCandidates.map((c) => (
-                                    <CandidateScoreRow key={c.profileUrl} candidate={c} onDelete={onDeleteCandidate} />
-                                ))}
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                {!isEditing ? (
+                                    <>
+                                        <button
+                                            className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                                            onClick={() => startEdit(job)}
+                                            title="Editar"
+                                        >
+                                            <Pencil className="size-3.5" />
+                                        </button>
+                                        <button
+                                            className="size-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                            onClick={() => onRemoveJob(job.id)}
+                                            title="Eliminar"
+                                        >
+                                            <Trash2 className="size-3.5" />
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        className="h-7 px-2 rounded-md bg-primary text-primary-foreground text-xs font-semibold"
+                                        onClick={handleUpdate}
+                                    >
+                                        Guardar
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Expanded details */}
+                        {isDescExpanded && (
+                            <div className="px-3.5 pb-3.5 pt-0 animate-in fade-in">
+                                {isEditing ? (
+                                    <textarea
+                                        className="w-full mt-2 bg-secondary border border-border rounded-lg p-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all resize-none"
+                                        value={editDesc}
+                                        onChange={(e) => setEditDesc(e.target.value)}
+                                        rows={3}
+                                    />
+                                ) : (
+                                    <>
+                                        {job.description && (
+                                            <p className="text-xs text-muted-foreground mt-1 mb-3 bg-secondary/30 p-2 rounded-lg border border-border/50 line-clamp-4">
+                                                {job.description}
+                                            </p>
+                                        )}
+                                        {jobCandidates.length > 0 && (
+                                            <div className="space-y-1.5 border-t border-border pt-2">
+                                                {jobCandidates.map((c) => (
+                                                    <CandidateScoreRow key={c.profileUrl} candidate={c} onDelete={onDeleteCandidate} />
+                                                ))}
+                                                <button
+                                                    className="w-full py-1 mt-2 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-md transition-colors"
+                                                    onClick={(e) => { e.stopPropagation(); onExportCSV(jobCandidates); }}
+                                                >
+                                                    Exportar CSV
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
                 );
             })}
+        </div>
+    );
+}
+
+// ── Compact candidate row with match score ──
+function CandidateScoreRow({ candidate, onDelete }: {
+    candidate: import('@/src/shared/types').CandidateProfile;
+    onDelete: (url: string) => Promise<void>;
+}) {
+    const scoreColor = (score: number | undefined) => {
+        if (score === undefined) return 'text-muted-foreground border-border';
+        if (score >= 75) return 'text-green-600 border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800';
+        if (score >= 50) return 'text-amber-600 border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800';
+        return 'text-red-600 border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800';
+    };
+
+    return (
+        <div className="flex items-center justify-between p-2 rounded-lg bg-background border border-border/60 hover:border-primary/30 transition-colors group">
+            <div className="min-w-0 flex items-center gap-2">
+                <div className="size-6 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
+                    {candidate.fullName.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                    <div className="text-xs font-medium truncate">{candidate.fullName || 'Sin nombre'}</div>
+                    <div className="text-[10px] text-muted-foreground truncate">{candidate.currentRole}</div>
+                </div>
+            </div>
+            <div className="flex items-center gap-2">
+                {candidate.matchScore !== undefined && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${scoreColor(candidate.matchScore)}`}>
+                        {candidate.matchScore}%
+                    </span>
+                )}
+                <button
+                    className="text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                    onClick={(e) => { e.stopPropagation(); onDelete(candidate.profileUrl); }}
+                    title="Eliminar"
+                >
+                    <Trash2 className="size-3.5" />
+                </button>
+            </div>
         </div>
     );
 }
