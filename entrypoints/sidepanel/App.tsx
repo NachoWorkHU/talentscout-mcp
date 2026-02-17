@@ -147,6 +147,18 @@ function App() {
         }
     }, [candidate, activeJob]);
 
+    const handleViewSavedCandidate = useCallback((c: CandidateProfile) => {
+        setCandidate(c);
+        setStatus('done');
+        setActiveTab('scanner');
+        setFitResult(null);
+        setDomMap('');
+        setElementCount(0);
+        setError('');
+        // Optional: switch active job context if needed
+        // if (c.jobId) store.setActiveJobId(c.jobId);
+    }, []);
+
     const alreadySaved = candidate
         ? store.isSaved(candidate.profileUrl, activeJob?.id)
         : false;
@@ -292,24 +304,22 @@ function App() {
                             {candidate && (
                                 <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
                                     {/* Card Header */}
-                                    <div className="p-4 flex items-start justify-between border-b border-border/50">
-                                        <div className="flex gap-3">
-                                            <div className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
-                                                {candidate.fullName.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <h2 className="font-semibold text-foreground leading-tight">{candidate.fullName}</h2>
-                                                <p className="text-sm text-muted-foreground">{candidate.currentRole}</p>
-                                                {candidate.location && (
-                                                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                                                        <span className="inline-block size-1.5 rounded-full bg-muted-foreground/50" />
-                                                        {candidate.location}
-                                                    </p>
-                                                )}
-                                            </div>
+                                    <div className="p-5 flex items-start gap-4 border-b border-border/50">
+                                        <div className="flex items-center justify-center size-12 rounded-lg bg-primary text-primary-foreground font-bold text-xl shrink-0 shadow-sm">
+                                            {candidate.fullName.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0 pt-0.5">
+                                            <h2 className="font-semibold text-foreground text-lg leading-tight tracking-tight">{candidate.fullName}</h2>
+                                            <p className="text-sm text-muted-foreground font-medium">{candidate.currentRole}</p>
+                                            {candidate.location && (
+                                                <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5">
+                                                    <span className="inline-block size-2 rounded-full bg-accent" />
+                                                    {candidate.location}
+                                                </p>
+                                            )}
                                         </div>
                                         <button
-                                            className="text-muted-foreground hover:text-foreground transition-colors"
+                                            className="text-muted-foreground hover:text-foreground transition-colors p-1"
                                             onClick={() => setCardExpanded(!cardExpanded)}
                                         >
                                             {cardExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
@@ -318,7 +328,7 @@ function App() {
 
                                     {/* Card Body */}
                                     {cardExpanded && (
-                                        <div className="p-4 space-y-4">
+                                        <div className="p-5 flex flex-col gap-6">
                                             {candidate.summary && (
                                                 <p className="text-sm text-muted-foreground leading-relaxed">
                                                     {candidate.summary}
@@ -327,11 +337,11 @@ function App() {
 
                                             {/* Skills */}
                                             {candidate.skills.length > 0 && (
-                                                <div className="space-y-2">
-                                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Skills</h3>
-                                                    <div className="flex flex-wrap gap-1.5">
+                                                <div className="flex flex-col gap-3">
+                                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">Skills</h3>
+                                                    <div className="flex flex-wrap gap-2">
                                                         {candidate.skills.map((skill, i) => (
-                                                            <span key={i} className="px-2 py-1 bg-secondary text-secondary-foreground text-xs rounded-md font-medium border border-border">
+                                                            <span key={i} className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground border border-border shadow-sm">
                                                                 {skill}
                                                             </span>
                                                         ))}
@@ -341,14 +351,14 @@ function App() {
 
                                             {/* Experience */}
                                             {candidate.experience.length > 0 && (
-                                                <div className="space-y-2">
-                                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Experiencia</h3>
-                                                    <div className="space-y-2">
+                                                <div className="flex flex-col gap-3">
+                                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">Experiencia</h3>
+                                                    <div className="flex flex-col gap-4">
                                                         {candidate.experience.map((exp, i) => (
-                                                            <div key={i} className="text-sm border-l-2 border-border pl-3">
-                                                                <div className="font-medium text-foreground">{exp.role}</div>
-                                                                <div className="text-muted-foreground text-xs flex justify-between">
-                                                                    <span>{exp.company}</span>
+                                                            <div key={i} className="text-sm border-l-2 border-border pl-4 flex flex-col gap-1">
+                                                                <div className="font-semibold text-foreground">{exp.role}</div>
+                                                                <div className="text-muted-foreground text-xs flex justify-between items-center">
+                                                                    <span className="font-medium">{exp.company}</span>
                                                                     <span>{exp.duration}</span>
                                                                 </div>
                                                             </div>
@@ -359,12 +369,12 @@ function App() {
 
                                             {/* Education */}
                                             {candidate.education?.length > 0 && (
-                                                <div className="space-y-2">
-                                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Educación</h3>
-                                                    <div className="space-y-2">
+                                                <div className="flex flex-col gap-3">
+                                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">Educación</h3>
+                                                    <div className="flex flex-col gap-4">
                                                         {candidate.education.map((edu, i) => (
-                                                            <div key={i} className="text-sm border-l-2 border-border pl-3">
-                                                                <div className="font-medium text-foreground">{edu.degree}</div>
+                                                            <div key={i} className="text-sm border-l-2 border-border pl-4 flex flex-col gap-1">
+                                                                <div className="font-semibold text-foreground">{edu.degree}</div>
                                                                 <div className="text-muted-foreground text-xs">
                                                                     {edu.institution} {edu.year && `• ${edu.year}`}
                                                                 </div>
@@ -376,8 +386,8 @@ function App() {
                                         </div>
                                     )}
 
-                                    {/* Card Footer Actions */}
-                                    <div className="p-3 bg-secondary/30 border-t border-border flex items-center justify-between gap-2">
+                                    {/* Footer Actions */}
+                                    <div className="p-4 bg-muted/30 border-t border-border flex items-center justify-between gap-3">
                                         {candidate.profileUrl && (
                                             <a
                                                 href={candidate.profileUrl}
@@ -461,6 +471,7 @@ function App() {
                                 getCandidatesForJob={store.getCandidatesForJob}
                                 getUnassignedCandidates={store.getUnassignedCandidates}
                                 onExportCSV={downloadAsCSV}
+                                onViewCandidate={handleViewSavedCandidate}
                             />
                         </div>
                     )}
@@ -553,6 +564,7 @@ function JobListPlaceholder({
     getCandidatesForJob,
     getUnassignedCandidates,
     onExportCSV,
+    onViewCandidate,
 }: {
     jobs: import('@/src/shared/types').JobPost[];
     candidates: import('@/src/shared/types').CandidateProfile[];
@@ -563,6 +575,7 @@ function JobListPlaceholder({
     getCandidatesForJob: (id: string) => import('@/src/shared/types').CandidateProfile[];
     getUnassignedCandidates: () => import('@/src/shared/types').CandidateProfile[];
     onExportCSV: (candidates: import('@/src/shared/types').CandidateProfile[]) => void;
+    onViewCandidate: (candidate: import('@/src/shared/types').CandidateProfile) => void;
 }) {
     const [showForm, setShowForm] = useState(false);
     const [title, setTitle] = useState('');
@@ -663,7 +676,12 @@ function JobListPlaceholder({
                 {unassigned.length > 0 && expandedDescId === 'unassigned' && (
                     <div className="mt-3 pt-3 border-t border-border space-y-2 animate-in fade-in">
                         {unassigned.map((c) => (
-                            <CandidateScoreRow key={c.profileUrl} candidate={c} onDelete={onDeleteCandidate} />
+                            <CandidateScoreRow
+                                key={c.profileUrl}
+                                candidate={c}
+                                onDelete={onDeleteCandidate}
+                                onView={onViewCandidate}
+                            />
                         ))}
                     </div>
                 )}
@@ -756,7 +774,12 @@ function JobListPlaceholder({
                                         {jobCandidates.length > 0 && (
                                             <div className="space-y-1.5 border-t border-border pt-2">
                                                 {jobCandidates.map((c) => (
-                                                    <CandidateScoreRow key={c.profileUrl} candidate={c} onDelete={onDeleteCandidate} />
+                                                    <CandidateScoreRow
+                                                        key={c.profileUrl}
+                                                        candidate={c}
+                                                        onDelete={onDeleteCandidate}
+                                                        onView={onViewCandidate}
+                                                    />
                                                 ))}
                                                 <button
                                                     className="w-full py-1 mt-2 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-md transition-colors"
@@ -778,9 +801,10 @@ function JobListPlaceholder({
 }
 
 // ── Compact candidate row with match score ──
-function CandidateScoreRow({ candidate, onDelete }: {
+function CandidateScoreRow({ candidate, onDelete, onView }: {
     candidate: import('@/src/shared/types').CandidateProfile;
     onDelete: (url: string) => Promise<void>;
+    onView: (candidate: import('@/src/shared/types').CandidateProfile) => void;
 }) {
     const scoreColor = (score: number | undefined) => {
         if (score === undefined) return 'text-muted-foreground border-border';
@@ -790,7 +814,10 @@ function CandidateScoreRow({ candidate, onDelete }: {
     };
 
     return (
-        <div className="flex items-center justify-between p-2 rounded-lg bg-background border border-border/60 hover:border-primary/30 transition-colors group">
+        <div
+            className="flex items-center justify-between p-2 rounded-lg bg-background border border-border/60 hover:border-primary/30 hover:bg-muted/50 transition-colors group cursor-pointer"
+            onClick={() => onView(candidate)}
+        >
             <div className="min-w-0 flex items-center gap-2">
                 <div className="size-6 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
                     {candidate.fullName.charAt(0).toUpperCase()}
@@ -807,11 +834,11 @@ function CandidateScoreRow({ candidate, onDelete }: {
                     </span>
                 )}
                 <button
-                    className="text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                    className="size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
                     onClick={(e) => { e.stopPropagation(); onDelete(candidate.profileUrl); }}
-                    title="Eliminar"
+                    title="Eliminar candidato"
                 >
-                    <Trash2 className="size-3.5" />
+                    <Trash2 className="size-3" />
                 </button>
             </div>
         </div>

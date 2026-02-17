@@ -1,24 +1,24 @@
 /**
  * Icebreaker — Generador de mensajes de contacto hiper-personalizados.
- *
- * Recibe un CandidateProfile y opcionalmente un JobPost.
- * Llama a generateOutreachMessage() y renderiza el resultado
- * con botón de copiar al portapapeles.
  */
 import { useState } from 'react';
 import type { CandidateProfile, JobPost } from '@/src/shared/types';
 import { generateOutreachMessage } from '@/src/lib/gemini';
+import { Sparkles, Copy, Check, RefreshCw } from 'lucide-react';
 
 interface IcebreakerProps {
     candidate: CandidateProfile;
     jobPost?: JobPost | null;
 }
 
+import { ChevronDown, ChevronUp } from 'lucide-react';
+
 export default function Icebreaker({ candidate, jobPost }: IcebreakerProps) {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [copied, setCopied] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true);
 
     const handleGenerate = async () => {
         setLoading(true);
@@ -30,7 +30,9 @@ export default function Icebreaker({ candidate, jobPost }: IcebreakerProps) {
                 candidate,
                 jobPost?.description,
             );
+
             setMessage(text);
+            setIsExpanded(true);
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
         } finally {
@@ -44,7 +46,6 @@ export default function Icebreaker({ candidate, jobPost }: IcebreakerProps) {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {
-            // Fallback for environments where clipboard API fails
             const textarea = document.createElement('textarea');
             textarea.value = message;
             document.body.appendChild(textarea);
@@ -57,61 +58,73 @@ export default function Icebreaker({ candidate, jobPost }: IcebreakerProps) {
     };
 
     return (
-        <div className="icebreaker">
+        <div className="w-full">
             {/* Generate Button */}
             {!message && !loading && (
-                <button className="icebreaker-btn" onClick={handleGenerate}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26z" />
-                    </svg>
-                    Generar mensaje de contacto
+                <button
+                    className="w-full h-10 rounded-xl bg-secondary hover:bg-secondary/80 text-secondary-foreground font-medium transition-all flex items-center justify-center gap-2 text-sm shadow-sm border border-border"
+                    onClick={handleGenerate}
+                >
+                    <Sparkles className="size-4 text-purple-600 dark:text-purple-400" />
+                    <span>Generar mensaje de contacto</span>
                 </button>
             )}
 
             {/* Loading State */}
             {loading && (
-                <div className="icebreaker-loading">
-                    <span className="spinner" />
-                    Generando mensaje personalizado…
+                <div className="flex items-center justify-center gap-2 p-3 text-sm text-muted-foreground bg-muted/30 rounded-xl">
+                    <div className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span>Generando mensaje personalizado con IA...</span>
                 </div>
             )}
 
             {/* Error */}
             {error && (
-                <div className="error-box" style={{ marginTop: 8 }}>
+                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 text-sm border border-red-100 dark:border-red-900/20 mt-2">
                     {error}
                 </div>
             )}
 
             {/* Message Result */}
             {message && (
-                <div className="icebreaker-result">
-                    <div className="icebreaker-header">
-                        <span className="icebreaker-label">Mensaje generado</span>
-                        <button
-                            className="icebreaker-copy"
-                            onClick={handleCopy}
-                        >
-                            {copied ? (
-                                <>
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                    Copiado
-                                </>
-                            ) : (
-                                <>
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                                    Copiar
-                                </>
+                <div className="flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                            <Sparkles className="size-3 text-purple-500" /> Mensaje Sugerido
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <button
+                                className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-secondary"
+                                onClick={() => setIsExpanded(!isExpanded)}
+                            >
+                                {isExpanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+                            </button>
+                            {isExpanded && (
+                                <button
+                                    className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-secondary"
+                                    onClick={handleGenerate}
+                                >
+                                    <RefreshCw className="size-3" /> Regenerar
+                                </button>
                             )}
-                        </button>
+                            <button
+                                className={`text-xs font-semibold transition-all flex items-center gap-1.5 px-2.5 py-1 rounded-md border shadow-sm
+                                ${copied
+                                        ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
+                                        : 'bg-background text-foreground border-border hover:bg-secondary'}`}
+                                onClick={handleCopy}
+                            >
+                                {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                                {copied ? 'Copiado' : 'Copiar'}
+                            </button>
+                        </div>
                     </div>
-                    <div className="icebreaker-message">
-                        {message}
-                    </div>
-                    <button className="icebreaker-regen" onClick={handleGenerate}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>
-                        Regenerar
-                    </button>
+
+                    {isExpanded && (
+                        <div className="p-4 bg-muted/50 text-sm rounded-lg border-l-4 border-primary font-mono text-muted-foreground whitespace-pre-wrap leading-relaxed shadow-sm animate-in fade-in slide-in-from-top-1 duration-200">
+                            {message}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
