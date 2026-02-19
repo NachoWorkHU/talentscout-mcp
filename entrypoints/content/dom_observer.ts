@@ -4,6 +4,9 @@
  * Recorre el DOM visible, asigna IDs numéricos temporales (data-mcp-id)
  * a elementos relevantes y devuelve una representación textual compacta
  * que la IA puede interpretar fácilmente.
+ *
+ * Incorpora "Zonas Prohibidas" para excluir chats, navegación, modales
+ * y otros overlays ruidosos que contaminan el análisis de perfiles.
  */
 
 /** Selectores de elementos que contienen información textual relevante */
@@ -24,6 +27,73 @@ const DEBUG_OUTLINE = '1px dashed #e6007e';
 /** Atributo de anclaje MCP */
 const MCP_ATTR = 'data-mcp-id';
 
+// ─────────────────────────────────────────────────────────
+// 🚫 ZONAS PROHIBIDAS — Selectores de zonas ruidosas a excluir
+// ─────────────────────────────────────────────────────────
+const FORBIDDEN_ZONES: string[] = [
+    // ── LinkedIn Messaging / Chat ──
+    '.msg-overlay-list-bubble',            // burbuja de chat minimizada
+    '.msg-overlay-conversation-bubble',    // conversación de chat abierta
+    '.msg-overlay-bubble-header',          // encabezado de burbuja
+    'aside.msg-overlay-container',         // contenedor principal de mensajes overlay
+    '.msg-convo-wrapper',                  // wrapper de conversación completa
+    '.msg-s-message-list-container',       // lista de mensajes
+    '.msg-s-event-listitem',              // item individual de mensaje
+    '[data-control-name="overlay.close_conversation_window"]', // botón cerrar
+    '.msg-form',                           // formulario de envío de mensaje
+
+    // ── LinkedIn Navigation ──
+    '#global-nav',                         // barra de navegación superior
+    '.global-nav',                         // navegación global (class)
+    'header.global-nav__header',           // header de navegación
+
+    // ── LinkedIn Footer ──
+    'footer',                              // footer genérico
+    '.global-footer',                      // footer de LinkedIn
+    '.li-footer',                          // footer alternativo
+
+    // ── LinkedIn Modales & Overlays ──
+    '.artdeco-modal-overlay',              // overlay de modal
+    '.artdeco-modal',                      // modal genérico de LinkedIn
+    '.artdeco-toast-item',                 // toast/notificaciones
+    '.premium-upsell',                     // prompts de LinkedIn Premium
+
+    // ── LinkedIn Ads & Sidebar derecho ──
+    '.ad-banner-container',                // anuncios
+    '.scaffold-layout__aside',             // panel lateral derecho (ads/sugerencias)
+    '.feed-follows-module',                // módulo "a quién seguir"
+
+    // ── Genéricos de seguridad ──
+    '[role="dialog"]',                     // cualquier dialog abierto
+    '[role="alertdialog"]',                // diálogos de alerta
+    '[aria-label="Messaging"]',            // contenedor de mensajería por aria-label
+];
+
+/** Selector CSS combinado de todas las zonas prohibidas */
+const FORBIDDEN_SELECTOR = FORBIDDEN_ZONES.join(', ');
+
+/**
+ * Verifica si un elemento está dentro de una "Zona Prohibida".
+ * Usa `Element.closest()` para recorrer la cadena de ancestros.
+ */
+function isInsideForbiddenZone(el: Element): boolean {
+    try {
+        return el.closest(FORBIDDEN_SELECTOR) !== null;
+    } catch {
+        // Si algún selector es inválido, fallar de forma segura
+        return false;
+    }
+}
+
+/**
+ * Determina el nodo raíz óptimo para el escaneo.
+ * Prioriza `<main>` (donde LinkedIn pone el contenido del perfil)
+ * y cae gracefully a `document.body` si no existe.
+ */
+function getScanRoot(): Element {
+    return document.querySelector('main') ?? document.body;
+}
+
 /**
  * Extrae el texto directo de un nodo, ignorando texto de hijos.
  * Esto evita duplicación cuando nodos padres contienen nodos hijos
@@ -40,38 +110,49 @@ function getDirectText(element: Element): string {
 }
 
 /**
+ * Set of elements mapped in the last run.
+ * Used for efficient cleanup without querySelectorAll.
+ */
+let _mappedElements: Set<HTMLElement> = new Set();
+
+/**
  * Limpia IDs y estilos de debug de una ejecución anterior.
- * Esto permite ejecutar mapDOM() múltiples veces sin acumular basura.
+ * Itera solo los elementos previamente registrados.
  */
 function clearPreviousMapping(): void {
     try {
-        const previouslyMapped = document.querySelectorAll(`[${MCP_ATTR}]`);
-        for (const el of previouslyMapped) {
+        for (const el of _mappedElements) {
             el.removeAttribute(MCP_ATTR);
-            (el as HTMLElement).style.outline = '';
+            el.style.outline = '';
         }
+        _mappedElements.clear();
     } catch (err) {
         console.warn('[TalentScout MCP] Error al limpiar mapeo anterior:', err);
+        _mappedElements.clear();
     }
 }
 
 /**
  * Determina si un elemento es visible en el viewport.
- * Descarta elementos ocultos (display:none, visibility:hidden, etc.)
+ * Optimized: uses cheap offsetWidth/Height pre-check before getComputedStyle.
  */
 function isVisible(el: HTMLElement): boolean {
+    // offsetParent === null covers display:none and detached elements
     if (el.offsetParent === null && el.tagName !== 'BODY') return false;
+    // Zero-size elements are invisible (cheap check, no layout recalc)
+    if (el.offsetWidth === 0 && el.offsetHeight === 0) return false;
+    // Only call getComputedStyle for visibility/opacity edge cases
     const style = window.getComputedStyle(el);
-    return (
-        style.display !== 'none' &&
-        style.visibility !== 'hidden' &&
-        style.opacity !== '0'
-    );
+    return style.visibility !== 'hidden' && style.opacity !== '0';
 }
 
 /**
  * Mapea el DOM de la página actual, asignando IDs numéricos temporales
  * y devolviendo una representación textual compacta.
+ *
+ * Aplica dos capas de filtrado:
+ *   1. Scoping: escanea desde `<main>` en vez de `document.body`.
+ *   2. Exclusión: descarta cualquier elemento dentro de una Zona Prohibida.
  *
  * @param debug  Si es true, aplica outline visual rosa a los elementos mapeados.
  * @returns      Representación textual con formato `[N] <TAG> "texto..."` por línea.
@@ -84,13 +165,18 @@ export function mapDOM(debug = true): string {
     let counter = 0;
 
     try {
-        const elements = document.body.querySelectorAll(ALL_SELECTORS);
+        // 🎯 Capa 1: Scoping — preferir <main> como raíz de escaneo
+        const root = getScanRoot();
+        const elements = root.querySelectorAll(ALL_SELECTORS);
 
         for (const el of elements) {
             const htmlEl = el as HTMLElement;
 
             // Saltar elementos no visibles
             if (!isVisible(htmlEl)) continue;
+
+            // 🚫 Capa 2: Exclusión — saltar elementos en Zonas Prohibidas
+            if (isInsideForbiddenZone(el)) continue;
 
             // Extraer texto directo del elemento (no de sus hijos)
             let text = getDirectText(el);
@@ -124,6 +210,7 @@ export function mapDOM(debug = true): string {
             // Asignar ID de anclaje
             counter++;
             htmlEl.setAttribute(MCP_ATTR, String(counter));
+            _mappedElements.add(htmlEl);
 
             // Debug visual: outline rosa
             if (debug) {

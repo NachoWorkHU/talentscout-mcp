@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { ContentResponse } from '@/src/shared/messaging';
 import type { CandidateProfile, JobFitResult } from '@/src/shared/types';
 import { analyzeCandidateProfile, analyzeJobFit, setApiKey } from '@/src/lib/gemini';
@@ -31,7 +31,7 @@ type TabId = 'scanner' | 'jobs' | 'settings';
 function App() {
     const [activeTab, setActiveTab] = useState<TabId>('scanner');
     const [status, setStatus] = useState<AppStatus>('ready');
-    const [domMap, setDomMap] = useState<string>('');
+    const domMapRef = useRef<string>('');
     const [candidate, setCandidate] = useState<CandidateProfile | null>(null);
     const [error, setError] = useState<string>('');
     const [elementCount, setElementCount] = useState(0);
@@ -68,7 +68,7 @@ function App() {
     const handleAnalyze = useCallback(async () => {
         setStatus('scanning');
         setError('');
-        setDomMap('');
+        domMapRef.current = '';
         setCandidate(null);
         setFitResult(null);
         setElementCount(0);
@@ -93,26 +93,22 @@ function App() {
             }
 
             const domString = response.data;
-            setDomMap(domString);
+            domMapRef.current = domString;
             setElementCount((domString.match(/^\[/gm) ?? []).length);
 
             setStatus('analyzing');
             const profile = await analyzeCandidateProfile(domString, tab.url ?? '');
             setCandidate(profile);
+            setStatus('done');
 
-            // Auto-fit if a job is selected
+            // Auto-fit in background — does NOT block the UI
             if (activeJob) {
                 setFitLoading(true);
-                try {
-                    const fit = await analyzeJobFit(profile, activeJob.description);
-                    setFitResult(fit);
-                } catch (fitErr) {
-                    console.warn('[TalentScout] Auto-fit failed:', fitErr);
-                }
-                setFitLoading(false);
+                analyzeJobFit(profile, activeJob.description)
+                    .then((fit) => setFitResult(fit))
+                    .catch((fitErr) => console.warn('[TalentScout] Auto-fit failed:', fitErr))
+                    .finally(() => setFitLoading(false));
             }
-
-            setStatus('done');
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             if (message.includes('Receiving end does not exist') || message.includes('Could not establish connection')) {
@@ -152,7 +148,7 @@ function App() {
         setStatus('done');
         setActiveTab('scanner');
         setFitResult(null);
-        setDomMap('');
+        domMapRef.current = '';
         setElementCount(0);
         setError('');
         // Optional: switch active job context if needed
@@ -435,7 +431,7 @@ function App() {
                             {fitResult && <JobFitCard result={fitResult} />}
 
                             {/* Debug Section */}
-                            {domMap && (
+                            {elementCount > 0 && (
                                 <div className="mt-4 border-t border-border pt-4">
                                     <button
                                         className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors"
@@ -446,7 +442,7 @@ function App() {
                                     </button>
                                     {showDebug && (
                                         <pre className="mt-2 p-3 bg-secondary/50 rounded-lg text-[10px] font-mono overflow-auto max-h-40 text-muted-foreground">
-                                            {domMap}
+                                            {domMapRef.current}
                                         </pre>
                                     )}
                                 </div>

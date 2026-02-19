@@ -59,9 +59,18 @@ async function getGenAI(): Promise<GoogleGenerativeAI> {
     const key = await getApiKey();
     if (!_genAI || key !== _cachedKey) {
         _genAI = new GoogleGenerativeAI(key);
+        // Invalidate cached models when key changes
+        _profileModel = null;
+        _fitModel = null;
+        _outreachModel = null;
     }
     return _genAI;
 }
+
+// ─── Cached model instances ───
+let _profileModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null;
+let _fitModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null;
+let _outreachModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null;
 
 // ─── Helpers ───
 
@@ -77,7 +86,7 @@ function safeParseJSON(text: string): unknown {
 
 /** Exponential backoff delay */
 function backoffDelay(attempt: number): number {
-    return Math.pow(2, attempt) * 15_000; // 30s, 60s
+    return Math.pow(2, attempt) * 2_000; // 4s, 8s
 }
 
 /** Check if error is retriable (rate limit) */
@@ -97,19 +106,22 @@ let _callInFlight = false;
 
 /**
  * Ensures minimum gap between Gemini calls and blocks concurrent requests.
- * Throws user-friendly error if throttled.
+ * WAITS the remaining gap instead of throwing, so sequential calls
+ * (e.g. profile → fit) work without manual delays.
+ * Still THROWS if another call is truly in-flight (concurrency guard).
  */
-function throttleGuard() {
+async function throttleGuard(): Promise<void> {
     if (_callInFlight) {
         throw new Error('Ya hay una solicitud a Gemini en curso. Esperá a que termine.');
     }
     const now = Date.now();
     const elapsed = now - _lastCallTime;
     if (elapsed < MIN_CALL_GAP_MS) {
-        throw new Error(`Demasiadas solicitudes. Esperá ${Math.ceil((MIN_CALL_GAP_MS - elapsed) / 1000)}s.`);
+        const waitMs = MIN_CALL_GAP_MS - elapsed;
+        await new Promise((r) => setTimeout(r, waitMs));
     }
     _callInFlight = true;
-    _lastCallTime = now;
+    _lastCallTime = Date.now();
 }
 
 function releaseThrottle() {
@@ -169,15 +181,18 @@ export async function analyzeCandidateProfile(
 ): Promise<CandidateProfile> {
     const genAI = await getGenAI();
 
-    const model = genAI.getGenerativeModel({
-        model: MODEL_NAME,
-        generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.1,
-            maxOutputTokens: 2048,
-        },
-        systemInstruction: RECRUITMENT_SYSTEM_PROMPT,
-    });
+    if (!_profileModel) {
+        _profileModel = genAI.getGenerativeModel({
+            model: MODEL_NAME,
+            generationConfig: {
+                responseMimeType: 'application/json',
+                temperature: 0.1,
+                maxOutputTokens: 2048,
+            },
+            systemInstruction: RECRUITMENT_SYSTEM_PROMPT,
+        });
+    }
+    const model = _profileModel;
 
     const userPrompt = `Analiza el siguiente mapa del DOM de un perfil profesional y extrae los datos del candidato en formato JSON.
 
@@ -188,7 +203,7 @@ ${domMap}`;
 
     let lastError: Error | null = null;
 
-    throttleGuard();
+    await throttleGuard();
     try {
         for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
             try {
@@ -318,21 +333,24 @@ export async function analyzeJobFit(
 ): Promise<JobFitResult> {
     const genAI = await getGenAI();
 
-    const model = genAI.getGenerativeModel({
-        model: MODEL_NAME,
-        generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.2,
-            maxOutputTokens: 1024,
-        },
-        systemInstruction: JOB_FIT_PROMPT,
-    });
+    if (!_fitModel) {
+        _fitModel = genAI.getGenerativeModel({
+            model: MODEL_NAME,
+            generationConfig: {
+                responseMimeType: 'application/json',
+                temperature: 0.2,
+                maxOutputTokens: 1024,
+            },
+            systemInstruction: JOB_FIT_PROMPT,
+        });
+    }
+    const model = _fitModel;
 
     const userPrompt = `PERFIL DEL CANDIDATO:\n${JSON.stringify(candidate, null, 2)}\n\nJOB DESCRIPTION:\n${jobDescription}`;
 
     let lastError: Error | null = null;
 
-    throttleGuard();
+    await throttleGuard();
     try {
         for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
             try {
@@ -407,14 +425,17 @@ export async function generateOutreachMessage(
 ): Promise<string> {
     const genAI = await getGenAI();
 
-    const model = genAI.getGenerativeModel({
-        model: MODEL_NAME,
-        generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 512,
-        },
-        systemInstruction: OUTREACH_PROMPT,
-    });
+    if (!_outreachModel) {
+        _outreachModel = genAI.getGenerativeModel({
+            model: MODEL_NAME,
+            generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 512,
+            },
+            systemInstruction: OUTREACH_PROMPT,
+        });
+    }
+    const model = _outreachModel;
 
     const candidateSummary = [
         `Nombre: ${candidate.fullName}`,
@@ -434,7 +455,7 @@ export async function generateOutreachMessage(
 
     let lastError: Error | null = null;
 
-    throttleGuard();
+    await throttleGuard();
     try {
         for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
             try {

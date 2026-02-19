@@ -6,7 +6,7 @@
  *
  * Uses refs to avoid stale closures in useCallback.
  */
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { CandidateProfile, JobPost } from '@/src/shared/types';
 import { log } from '@/src/utils/logger';
 
@@ -279,7 +279,7 @@ export function useCandidateStore(): CandidateStore {
 
     const clearToast = useCallback(() => setToast(null), []);
 
-    return {
+    return useMemo(() => ({
         jobs,
         candidates,
         activeJobId,
@@ -298,5 +298,5 @@ export function useCandidateStore(): CandidateStore {
         getCandidatesForJob,
         getUnassignedCandidates,
         clearToast,
-    };
+    }), [jobs, candidates, activeJobId, loading, storageUsage, toast]);
 }
