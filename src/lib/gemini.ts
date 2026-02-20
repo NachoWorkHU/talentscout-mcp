@@ -128,6 +128,20 @@ function releaseThrottle() {
     _callInFlight = false;
 }
 
+/**
+ * ⚠ Test-only — resets throttle + singleton state between test runs.
+ * Never call this in production code.
+ */
+export function _resetForTests() {
+    _callInFlight = false;
+    _lastCallTime = 0;
+    _genAI = null;
+    _cachedKey = null;
+    _profileModel = null;
+    _fitModel = null;
+    _outreachModel = null;
+}
+
 // ─── System Prompt de Reclutamiento ───
 const RECRUITMENT_SYSTEM_PROMPT = `Eres un agente de reclutamiento experto. Tu tarea es analizar un mapa del DOM de una página web (un perfil profesional) y extraer información estructurada del candidato.
 

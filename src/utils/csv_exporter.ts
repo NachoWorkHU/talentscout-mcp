@@ -1,10 +1,12 @@
 /**
  * downloadAsCSV — Genera y descarga un archivo CSV desde candidatos guardados.
  *
- * Escapa comillas dobles y campos con comas (RFC 4180).
- * Incluye BOM UTF-8 para compatibilidad con Excel.
+ * Usa punto y coma (;) como delimitador para compatibilidad con Excel ES/LatAm.
+ * Incluye BOM UTF-8 para preservar tildes y eñes.
  */
 import type { CandidateProfile } from '@/src/shared/types';
+
+const DELIMITER = ';';
 
 const CSV_HEADERS = [
     'Nombre',
@@ -20,12 +22,21 @@ const CSV_HEADERS = [
     'Fecha Captura',
 ];
 
+/** Escapa un campo: lo envuelve en comillas si contiene el delimitador, saltos de línea o comillas dobles. */
 function escapeField(value: string): string {
     if (!value) return '';
-    if (value.includes(',') || value.includes('\n') || value.includes('"')) {
-        return `"${value.replace(/"/g, '""')}"`;
+    // Duplicar comillas dobles internas
+    const escaped = value.replace(/"/g, '""');
+    // Envolver en comillas si contiene delimitador, salto de línea o comillas
+    if (value.includes(DELIMITER) || value.includes('\n') || value.includes('"')) {
+        return `"${escaped}"`;
     }
-    return value;
+    return escaped;
+}
+
+/** Une elementos de un array con barra vertical para no interferir con el delimitador. */
+function joinList(items: string[]): string {
+    return items.join(' | ');
 }
 
 export function downloadAsCSV(candidates: CandidateProfile[]): void {
@@ -40,14 +51,14 @@ export function downloadAsCSV(candidates: CandidateProfile[]): void {
         escapeField(c.phone ?? ''),
         escapeField(c.profileUrl),
         escapeField(c.source),
-        escapeField(c.skills.join(', ')),
-        escapeField((c.certifications ?? []).join(', ')),
+        escapeField(joinList(c.skills)),
+        escapeField(joinList(c.certifications ?? [])),
         escapeField(c.savedAt ?? ''),
     ]);
 
     const csvContent = [
-        CSV_HEADERS.join(','),
-        ...rows.map((r) => r.join(',')),
+        CSV_HEADERS.join(DELIMITER),
+        ...rows.map((r) => r.join(DELIMITER)),
     ].join('\n');
 
     // BOM para que Excel interprete UTF-8 correctamente
